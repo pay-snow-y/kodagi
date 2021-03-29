@@ -1,3 +1,4 @@
+import List.Companion.foldLeft
 import org.junit.jupiter.api.Test
 
 /**
@@ -20,12 +21,55 @@ class Chapter5 {
         // fun init(): List<A>
         println(List.Cons(1, List(2, 3, 4, 5)).init())
     }
+
+    @Test
+    fun `228p`() {
+        println(foldRight(List(1, 2, 3), List()) { x ->
+            { acc: List<Int> -> acc.cons(x) }
+        })
+    }
+
+    @Test
+    fun `5-8`() {
+        println(List(1, 2, 3).length())
+    }
+
+    @Test
+    fun `5-11`() {
+        // reverse():List<A>를 작성하라
+        println(List(1, 2, 3).reverse())
+    }
 }
 
-//fun sum(intList: List<Int>): Int = when (intList) {
-//    List.Nil -> 0
-//    is List.Cons -> intList.head + sum(intList.tail)
-//}
+fun sum(intList: List<Int>): Int =
+    foldLeft(intList, 0) { a -> { it + a } }
+
+fun product(doubleList: List<Double>): Double =
+    foldLeft(doubleList, 1.0) { a -> { a * it } }
+
+fun <A> operation(
+    list: List<A>,
+    identity: A,
+    operator: (A) -> (A) -> A
+): A = when (list) {
+    List.Nil -> identity
+    is List.Cons -> operator(list.head)(
+        operation(
+            list.tail,
+            identity,
+            operator
+        )
+    )
+}
+
+fun <A, B> foldRight(
+    list: List<A>,
+    identity: B,
+    f: (A) -> (B) -> B
+): B = when (list) {
+    List.Nil -> identity
+    is List.Cons -> f(list.head)(foldRight(list.tail, identity, f))
+}
 
 sealed class List<out A> {
     abstract fun isEmpty(): Boolean
@@ -38,11 +82,20 @@ sealed class List<out A> {
 
     fun drop(n: Int): List<A> = drop(this, n)
     fun dropWhile(p: (A) -> Boolean): List<A> = dropWhile(this, p)
-    fun reverse(): List<A> = reverse(invoke(), this)
     fun init(): List<A> = this.reverse().drop(1).reverse()
 
+    fun <B> coFoldRight(identify: B, f: (A) -> (B) -> B): B =
+        coFoldRight(this, identify, f)
 
-    private object Nil : List<Nothing>() {
+    fun <B> foldLeft(identify: B, f: (B) -> (A) -> B): B =
+        foldLeft(this, identify, f)
+
+    fun length(): Int = foldLeft(0) { acc -> { acc + 1 } }
+    fun reverse(): List<A> =
+        foldLeft(invoke()) { acc -> { acc.cons(it) } }
+
+
+    object Nil : List<Nothing>() {
         override fun isEmpty() = true
         override fun toString(): String = "[NIL]"
     }
@@ -83,5 +136,32 @@ sealed class List<out A> {
                 Nil -> acc
                 is Cons -> reverse(acc.cons(list.head), list.tail)
             }
+
+        tailrec fun <A, B> foldLeft(
+            list: List<A>,
+            acc: B,
+            f: (B) -> (A) -> B
+        ): B = when (list) {
+            Nil -> acc
+            is Cons -> foldLeft(list.tail, f(acc)(list.head), f)
+        }
+
+        tailrec fun <A, B> coFoldRight(
+            list: List<A>,
+            acc: B,
+            f: (A) -> (B) -> B
+        ): B = when (list) {
+            Nil -> acc
+            is Cons -> coFoldRight(list.tail, f(list.head)(acc), f)
+        }
+
+        fun <A, B> foldRight(
+            list: List<A>,
+            identity: B,
+            f: (A) -> (B) -> B
+        ): B = when (list) {
+            Nil -> identity
+            is Cons -> f(list.head)(foldRight(list.tail, identity, f))
+        }
     }
 }

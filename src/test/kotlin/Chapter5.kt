@@ -39,7 +39,49 @@ class Chapter5 {
         // reverse():List<A>를 작성하라
         println(List(1, 2, 3).reverse())
     }
+
+    @Test
+    fun `5-14`() {
+        println(List(1, 2, 3).concat(List(4, 5, 6)))
+    }
+
+    @Test
+    fun `5-15`() {
+        // List<Int> -> 3배곱
+        println(times3(List(1, 2, 3)))
+    }
+
+    @Test
+    fun `5-16`() {
+        // List<Double> -> List<String>
+        println(doubleToString(List(1.1, 2.2, 3.3)))
+    }
+
+    @Test
+    fun `5-18`() {
+        // map 함수 작성
+        println(List(1, 2, 3).map { it * 3 })
+    }
+
+    @Test
+    fun `5-19`() {
+        // filter 작성
+        println(List(1, 2, 3).filter { it % 2 == 0 })
+    }
+
+    @Test
+    fun `5-20`() {
+        // flatMap 구현
+
+    }
 }
+
+fun times3(intList: List<Int>): List<Int> =
+    intList.reverse().foldLeft(List()) { acc -> { a -> List.Cons(a * 3, acc) } }
+
+fun doubleToString(doubleList: List<Double>): List<String> =
+    doubleList.reverse()
+        .foldLeft(List()) { acc -> { a -> List.Cons("$a", acc) } }
 
 fun sum(intList: List<Int>): Int =
     foldLeft(intList, 0) { a -> { it + a } }
@@ -83,9 +125,10 @@ sealed class List<out A> {
     fun drop(n: Int): List<A> = drop(this, n)
     fun dropWhile(p: (A) -> Boolean): List<A> = dropWhile(this, p)
     fun init(): List<A> = this.reverse().drop(1).reverse()
+    fun concat(list: List<@UnsafeVariance A>): List<A> = concat(this, list)
 
     fun <B> coFoldRight(identify: B, f: (A) -> (B) -> B): B =
-        coFoldRight(this, identify, f)
+        coFoldRight(this.reverse(), identify, f)
 
     fun <B> foldLeft(identify: B, f: (B) -> (A) -> B): B =
         foldLeft(this, identify, f)
@@ -93,6 +136,12 @@ sealed class List<out A> {
     fun length(): Int = foldLeft(0) { acc -> { acc + 1 } }
     fun reverse(): List<A> =
         foldLeft(invoke()) { acc -> { acc.cons(it) } }
+
+    fun <B> map(f: (A) -> B): List<B> = map(this, f)
+    fun filter(p: (A) -> Boolean): List<A> = filter(this, p)
+    fun <B> flatMap(f: (A) -> List<B>): List<B> = flatten(map(f))
+    fun fliterByFlatMap(p: (A) -> Boolean): List<A> =
+        flatMap { if (p(it)) List(it) else Nil }
 
 
     object Nil : List<Nothing>() {
@@ -137,6 +186,15 @@ sealed class List<out A> {
                 is Cons -> reverse(acc.cons(list.head), list.tail)
             }
 
+        fun <A> concat(list1: List<A>, list2: List<A>): List<A> = when (list1) {
+            Nil -> list2
+            is Cons -> foldRight(list1, list2) { a ->
+                { acc ->
+                    acc.cons(a)
+                }
+            }
+        }
+
         tailrec fun <A, B> foldLeft(
             list: List<A>,
             acc: B,
@@ -163,5 +221,27 @@ sealed class List<out A> {
             Nil -> identity
             is Cons -> f(list.head)(foldRight(list.tail, identity, f))
         }
+
+        fun <A> flatten(llist: List<List<A>>): List<A> = foldLeft(
+            llist,
+            invoke()
+        ) { acc: List<A> -> acc::concat }
+
+        fun <A, B> map(list: List<A>, f: (A) -> B): List<B> =
+            list.reverse()
+                .foldLeft(invoke()) { acc -> { a -> Cons(f(a), acc) } }
+
+        fun <A> filter(list: List<A>, p: (A) -> Boolean): List<A> =
+            list.reverse().foldLeft(invoke()) { acc ->
+                { a ->
+                    if (p(a)) Cons(
+                        a,
+                        acc
+                    ) else acc
+                }
+            }
+
+        fun <A, B> flatMap(list: List<A>, f: (A) -> List<B>): List<B> =
+            flatten(map(list, f))
     }
 }

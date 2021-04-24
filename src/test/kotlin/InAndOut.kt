@@ -7,26 +7,30 @@ import org.junit.jupiter.api.Test
 class InAndOut {
 
     private val production1: Production<Food> = FoodStore()
-    private val production2: Production<Food> = FastFoodStore()
-    private val production3: Production<Food> = InOutBurger()
+    private val production2: Production<Food> = FastFoodStore() // Production<FastFood>
+    private val production3: Production<Food> = InOutBurger()   // Production<Burger>
 
     @Test
     fun `OutTest`() {
-        production1.produce()
-        production2.produce()
-        production3.produce()
+        production1.produce()   // Food
+        production2.produce()   // FastFood
+        eatFood(production3.produce())   // Burger
     }
 
-    private val consumer1: Consumer<Burger> = Everybody()
-    private val consumer2: Consumer<Burger> = ModernPeople()
-    private val consumer3: Consumer<Burger> = American()
+    private val consumer1: Consumer<Burger> = Everybody()   // Consumer<Food>
+    private val consumer2: Consumer<Burger> = ModernPeople()    // Consumer<FastFood>
+    private val consumer3: Consumer<Burger> = American()    // Consumer<Burger>
 
     @Test
     fun `InTest`() {
-        consumer1.consume(Burger())
+        consumer1.consume(Burger()) // Food
         consumer2.consume(Burger())
         consumer3.consume(Burger())
     }
+}
+
+fun eatFood(food:Food) {
+    println(food)
 }
 
 interface Production<out T> {
